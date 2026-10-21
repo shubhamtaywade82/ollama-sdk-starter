@@ -1,0 +1,17 @@
+Ollama SDK — engineer's notes (v1.19.1)
+======================================
+
+Retry-After: on HTTP 429 the SDK sleeps the server-declared delay verbatim,
+then falls back to full-jitter backoff when the header is missing.
+
+Streaming: thinking and token events are discrete; stream.finalResult
+aggregates message, thinking, tool calls, and the telemetry counters.
+
+Agent guardrails: maxIterations caps the loop, maxToolCalls budgets total
+calls, and cycle detection fails fast on repeated identical calls.
+
+Embeddings: embedBatch bounds /api/embed batches (default 32 inputs with 3
+in flight) so large corpora cannot OOM a local daemon.
+
+MCP: loadMcpTools converts server tools into Ollama function tools; the
+JSON Schema is validated before the MCP server is ever called.

@@ -1,0 +1,28 @@
+{
+  "name": "ollama-sdk-starter",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Runnable starter for @nemesis-oss/ollama-sdk — structured outputs, tool-calling agents, streaming reasoning. Works with zero daemon (built-in mock server) or against a live Ollama.",
+  "scripts": {
+    "demo": "tsx src/01-structured-output.ts && tsx src/02-tool-calling-agent.ts && tsx src/03-streaming-reasoning.ts && tsx src/04-rag-embed-batch.ts && tsx src/05-mcp-tools.ts && tsx src/06-filesystem-mcp.ts",
+    "demo:structured": "tsx src/01-structured-output.ts",
+    "demo:agent": "tsx src/02-tool-calling-agent.ts",
+    "demo:streaming": "tsx src/03-streaming-reasoning.ts",
+    "demo:rag": "tsx src/04-rag-embed-batch.ts",
+    "demo:mcp": "tsx src/05-mcp-tools.ts",
+    "demo:filesystem": "tsx src/06-filesystem-mcp.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "^2.3.1",
+    "@modelcontextprotocol/server-filesystem": "^2.0.0",
+    "@nemesis-oss/ollama-sdk": "^1.19.1",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
