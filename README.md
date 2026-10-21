@@ -10,6 +10,8 @@ A runnable starter for [`@nemesis-oss/ollama-sdk`](https://www.npmjs.com/package
 | `src/04-rag-embed-batch.ts` | Full RAG loop: embed corpus → rank → answer from context | `embedBatch` (bounded batches + progress), `embed`, cosine retrieval, context injection |
 | `src/05-mcp-tools.ts` | MCP tools discovered and executed inside an Agent | `loadMcpTools`, paginated discovery, JSON-Schema argument validation, `structuredContent` results |
 | `src/06-filesystem-mcp.ts` | **Real** filesystem MCP server over stdio (never mocked) | `connectStdioMcpClient`, `@modelcontextprotocol/server-filesystem`, real tool execution |
+| `src/07-multi-agent-router.ts` | Autonomous routing pipeline dispatching to specialist models | Multi-model orchestration, prompt classification, tool execution |
+| `src/08-kv-cache-session.ts` | Multi-turn sessions with prompt-prefix reuse and in-place compaction | `client.session`, `ConversationSession`, `cacheStats`, `session.compact` |
 
 ## Quick start (zero daemon required)
 
@@ -48,6 +50,8 @@ npm run demo:streaming
 npm run demo:rag
 npm run demo:mcp
 npm run demo:filesystem
+npm run demo:router
+npm run demo:cache
 ```
 
 ## Where to go next

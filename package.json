@@ -12,6 +12,8 @@
     "demo:rag": "tsx src/04-rag-embed-batch.ts",
     "demo:mcp": "tsx src/05-mcp-tools.ts",
     "demo:filesystem": "tsx src/06-filesystem-mcp.ts",
+    "demo:router": "tsx src/07-multi-agent-router.ts",
+    "demo:cache": "tsx src/08-kv-cache-session.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
