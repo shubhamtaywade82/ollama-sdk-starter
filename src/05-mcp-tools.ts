@@ -36,6 +36,8 @@ import type { StarterRuntime } from './support/runtime.js';
 // paginated discovery works through the bridge.
 const KNOWLEDGE: Record<string, string> = {
   retry: 'Retry-After honoring: on 429s the SDK sleeps the server-declared delay verbatim (v1.19.1).',
+  '429': 'Retry-After honoring: on 429s the SDK sleeps the server-declared delay verbatim (v1.19.1).',
+  rate: 'Retry-After honoring: on 429s the SDK sleeps the server-declared delay verbatim (v1.19.1).',
   stream: 'Streams emit thinking/token events; finalResult aggregates telemetry counters.',
 };
 
@@ -46,10 +48,15 @@ const mcpServer: McpClientLike = {
         tools: [
           {
             name: 'search_knowledge',
-            description: 'Search the internal knowledge base for SDK behavior notes',
+            description: 'Search the internal knowledge base for SDK behavior notes (topics: retry, 429, stream)',
             inputSchema: {
               type: 'object',
-              properties: { topic: { type: 'string' } },
+              properties: {
+                topic: {
+                  type: 'string',
+                  description: 'Keyword or topic, e.g. "retry", "429", "stream"',
+                },
+              },
               required: ['topic'],
             },
           },
@@ -75,12 +82,19 @@ const mcpServer: McpClientLike = {
 
   callTool: async (params): Promise<McpToolCallResult> => {
     if (params.name === 'search_knowledge') {
-      const topic = String((params.arguments as { topic?: string }).topic ?? '');
-      const note = KNOWLEDGE[topic.toLowerCase()] ?? null;
+      const topic = String((params.arguments as { topic?: string }).topic ?? '').toLowerCase();
+      // Match keywords or substrings against knowledge topics
+      const matchKey = Object.keys(KNOWLEDGE).find((k) => topic.includes(k) || k.includes(topic));
+      const note = matchKey ? KNOWLEDGE[matchKey] : null;
       // MCP-style error: stays model-readable, becomes a tool result, not a crash.
       if (!note) {
         return {
-          content: [{ type: 'text', text: `No notes for topic "${topic}".` }],
+          content: [
+            {
+              type: 'text',
+              text: `No notes for topic "${topic}". Available topics: retry (429 rate limits), stream.`,
+            },
+          ],
           isError: true,
         };
       }
@@ -172,7 +186,7 @@ async function main(): Promise<void> {
   const registry = new ToolRegistry(mcpTools);
   const agent = new Agent(rt.client, {
     tools: registry,
-    maxIterations: 5,
+    maxIterations: 8,
     hooks: {
       onToolCallStart: (call) =>
         console.log(`  → MCP tool: ${call.function.name}(${JSON.stringify(call.function.arguments)})`),

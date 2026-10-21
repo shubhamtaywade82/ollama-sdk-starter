@@ -22,7 +22,7 @@ const TicketAnalysis = z.object({
     .enum(['low', 'medium', 'high', 'critical'])
     .describe('How fast a human must react'),
   teams: z.array(z.enum(['frontend', 'backend', 'sre', 'security', 'docs'])),
-  actionItems: z.array(z.string()).max(5),
+  actionItems: z.array(z.string()).max(10),
 });
 type TicketAnalysis = z.infer<typeof TicketAnalysis>;
 
