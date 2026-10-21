@@ -31,33 +31,32 @@ export interface StarterRuntime {
   shutdown: () => Promise<void>;
 }
 
-export async function resolveRuntime(): Promise<StarterRuntime> {
-  const baseUrl = process.env['OLLAMA_BASE_URL'];
-
-  // ---- LIVE mode: real daemon -------------------------------------------
-  if (baseUrl) {
-    const client = new OllamaClient({ baseUrl });
-    const model = process.env['OLLAMA_MODEL'] ?? 'llama3.2';
-    const ping = await client.ping();
-    if (!ping.healthy) {
-      console.error(`✗ Ollama at ${baseUrl} did not answer the liveness probe.`);
-      process.exit(1);
-    }
-    console.log(
-      `▶ LIVE mode — daemon at ${baseUrl} (latency ${ping.latencyMs ?? '?'}ms), model: ${model}\n`,
-    );
-    return {
-      client,
-      mode: 'live',
-      model,
-      server: undefined,
-      shutdown: async () => {
-        await client.destroy();
-      },
-    };
+async function initLiveRuntime(baseUrl: string): Promise<StarterRuntime> {
+  const timeoutMs = process.env['OLLAMA_TIMEOUT_MS']
+    ? Number(process.env['OLLAMA_TIMEOUT_MS'])
+    : 120_000;
+  const client = new OllamaClient({ baseUrl, timeoutMs });
+  const model = process.env['OLLAMA_MODEL'] ?? 'llama3.2';
+  const ping = await client.ping();
+  if (!ping.healthy) {
+    console.error(`✗ Ollama at ${baseUrl} did not answer the liveness probe.`);
+    process.exit(1);
   }
+  console.log(
+    `▶ LIVE mode — daemon at ${baseUrl} (latency ${ping.latencyMs ?? '?'}ms), model: ${model}\n`,
+  );
+  return {
+    client,
+    mode: 'live',
+    model,
+    server: undefined,
+    shutdown: async () => {
+      await client.destroy();
+    },
+  };
+}
 
-  // ---- DEMO mode: in-memory mock server ----------------------------------
+async function initDemoRuntime(): Promise<StarterRuntime> {
   const server = createMockOllamaServer();
   await server.start();
   const client = new OllamaClient({ baseUrl: server.baseUrl });
@@ -75,6 +74,20 @@ export async function resolveRuntime(): Promise<StarterRuntime> {
       await server.stop();
     },
   };
+}
+
+export async function resolveRuntime(): Promise<StarterRuntime> {
+  try {
+    process.loadEnvFile?.();
+  } catch {
+    // .env is optional; missing file falls back to mock server
+  }
+
+  const baseUrl = process.env['OLLAMA_BASE_URL'];
+  if (baseUrl) {
+    return initLiveRuntime(baseUrl);
+  }
+  return initDemoRuntime();
 }
 
 /**

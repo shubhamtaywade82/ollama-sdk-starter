@@ -16,7 +16,7 @@ import { chatJsonFrame, resolveRuntime, section } from './support/runtime.js';
 
 /** The shape we want OUT of the model — plain Zod, nothing SDK-specific. */
 const TicketAnalysis = z.object({
-  title: z.string().max(80).describe('Short engineering summary'),
+  title: z.string().max(120).describe('Short engineering summary'),
   sentiment: z.enum(['positive', 'neutral', 'negative']),
   urgency: z
     .enum(['low', 'medium', 'high', 'critical'])
