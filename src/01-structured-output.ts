@@ -16,7 +16,7 @@ import { chatJsonFrame, resolveRuntime, section } from './support/runtime.js';
 
 /** The shape we want OUT of the model — plain Zod, nothing SDK-specific. */
 const TicketAnalysis = z.object({
-  title: z.string().max(120).describe('Short engineering summary'),
+  title: z.string().max(256).describe('Short engineering summary'),
   sentiment: z.enum(['positive', 'neutral', 'negative']),
   urgency: z
     .enum(['low', 'medium', 'high', 'critical'])
@@ -98,7 +98,18 @@ async function main(): Promise<void> {
   section('1 · chatWithSchema — unstructured ticket → typed, validated data');
 
   const analysis: TicketAnalysis = await rt.client.chatWithSchema(
-    { model: rt.model, messages: [{ role: 'user', content: TICKET }] },
+    {
+      model: rt.model,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are an incident triage assistant. Analyze the ticket and provide a concise summary in English.',
+        },
+        { role: 'user', content: TICKET },
+      ],
+      options: { temperature: 0.2 },
+    },
     TicketAnalysis,
   );
 
