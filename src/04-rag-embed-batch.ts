@@ -15,7 +15,12 @@
  * final chat responder inspects the request body to prove the retrieved
  * context actually reached the prompt.
  */
-import { resolveRuntime, section } from './support/runtime.js';
+import {
+  printAnswer,
+  resolveRuntime,
+  section,
+  style,
+} from './support/runtime.js';
 
 // ---- The corpus: the SDK's own feature notes -----------------------------
 const CORPUS: readonly string[] = [
@@ -133,7 +138,8 @@ async function main(): Promise<void> {
     .sort((x, y) => y.similarity - x.similarity)
     .slice(0, 3); // top-k
   for (const { doc, similarity } of ranked) {
-    console.log(`  ${(similarity * 100).toFixed(1)}%  ${doc.slice(0, 72)}…`);
+    const score = style.green(`${(similarity * 100).toFixed(1)}%`);
+    console.log(`  ${score}  ${doc.slice(0, 72)}…`);
   }
 
   // ---- 4 · chat with the retrieved context ---------------------------------
@@ -150,7 +156,7 @@ async function main(): Promise<void> {
       { role: 'user', content: QUERY },
     ],
   });
-  console.log(`  ${res.message.content.trim()}`);
+  printAnswer(res.message.content);
 
   await rt.shutdown();
 }

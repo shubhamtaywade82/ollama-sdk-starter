@@ -12,7 +12,13 @@
  */
 import { z } from 'zod';
 import { formatTelemetry } from '@nemesis-oss/ollama-sdk';
-import { chatJsonFrame, resolveRuntime, section } from './support/runtime.js';
+import {
+  chatJsonFrame,
+  printBox,
+  resolveRuntime,
+  section,
+  style,
+} from './support/runtime.js';
 
 /** The shape we want OUT of the model — plain Zod, nothing SDK-specific. */
 const TicketAnalysis = z.object({
@@ -22,7 +28,10 @@ const TicketAnalysis = z.object({
     .enum(['low', 'medium', 'high', 'critical'])
     .describe('How fast a human must react'),
   teams: z.array(z.enum(['frontend', 'backend', 'sre', 'security', 'docs'])),
-  actionItems: z.array(z.string()).max(10),
+  actionItems: z
+    .array(z.string())
+    .max(10)
+    .describe('Atomic, single-sentence action item without markdown headers or sub-bullets'),
 });
 type TicketAnalysis = z.infer<typeof TicketAnalysis>;
 
@@ -104,7 +113,7 @@ async function main(): Promise<void> {
         {
           role: 'system',
           content:
-            'You are an incident triage assistant. Analyze the ticket and provide a concise summary in English.',
+            'You are an incident triage assistant. Analyze the ticket and provide a concise summary in English. Each action item must be a single plain-text sentence.',
         },
         { role: 'user', content: TICKET },
       ],
@@ -113,13 +122,26 @@ async function main(): Promise<void> {
     TicketAnalysis,
   );
 
-  // `analysis` is fully typed and schema-validated — autocomplete away.
-  console.log(`title     : ${analysis.title}`);
-  console.log(`sentiment : ${analysis.sentiment}`);
-  console.log(`urgency   : ${analysis.urgency}`);
-  console.log(`teams     : ${analysis.teams.join(', ')}`);
-  console.log('actions   :');
-  for (const item of analysis.actionItems) console.log(`  – ${item}`);
+  const urgencyBadge = {
+    low: style.green('[LOW]'),
+    medium: style.yellow('[MEDIUM]'),
+    high: style.magenta('[HIGH]'),
+    critical: style.red('[CRITICAL]'),
+  }[analysis.urgency];
+
+  const teamBadges = analysis.teams.map((t) => style.cyan(`#${t}`)).join('  ');
+
+  printBox('Incident Ticket Analysis', [
+    `${style.bold('Title')}     : ${analysis.title}`,
+    `${style.bold('Urgency')}   : ${urgencyBadge}`,
+    `${style.bold('Sentiment')} : ${analysis.sentiment}`,
+    `${style.bold('Teams')}     : ${teamBadges}`,
+    style.dim('─'.repeat(58)),
+    style.bold('Recommended Actions:'),
+    ...analysis.actionItems.map(
+      (item, i) => `  ${style.yellow(`${i + 1}.`)} ${item.trim()}`,
+    ),
+  ]);
 
   // ---- Telemetry from the same conversation ------------------------------
   section('2 · formatTelemetry — raw nanosecond counters → human numbers');
@@ -129,11 +151,14 @@ async function main(): Promise<void> {
     messages: [{ role: 'user', content: 'One-line triage summary.' }],
   });
   const t = formatTelemetry(res);
-  console.log(`total latency      : ${t.totalLatencyMs} ms`);
-  console.log(`model load         : ${t.modelLoadMs} ms`);
-  console.log(`prompt eval        : ${t.promptEvalMs} ms (${t.promptTokensPerSecond} tok/s)`);
-  console.log(`generation         : ${t.generationMs} ms (${t.tokensPerSecond} tok/s)`);
-  console.log(`KV cache hit ratio : ${t.cacheHitRatio}`);
+
+  printBox('Telemetry Summary', [
+    `${style.bold('Total latency')}      : ${t.totalLatencyMs} ms`,
+    `${style.bold('Model load')}         : ${t.modelLoadMs} ms`,
+    `${style.bold('Prompt eval')}        : ${t.promptEvalMs} ms (${t.promptTokensPerSecond} tok/s)`,
+    `${style.bold('Generation')}         : ${t.generationMs} ms (${t.tokensPerSecond} tok/s)`,
+    `${style.bold('KV cache hit ratio')} : ${(t.cacheHitRatio * 100).toFixed(1)}%`,
+  ]);
 
   await rt.shutdown();
 }

@@ -29,7 +29,13 @@ import {
   type AnyTool,
 } from '@nemesis-oss/ollama-sdk';
 import { connectStdioMcpClient } from '@nemesis-oss/ollama-sdk/mcp/stdio';
-import { chatJsonFrame, resolveRuntime, section } from './support/runtime.js';
+import {
+  chatJsonFrame,
+  printAnswer,
+  resolveRuntime,
+  section,
+  style,
+} from './support/runtime.js';
 import type { StarterRuntime } from './support/runtime.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -161,12 +167,17 @@ async function main(): Promise<void> {
       maxIterations: 6,
       hooks: {
         onToolCallStart: (call) =>
-          console.log(`  → ${call.function.name}(${JSON.stringify(call.function.arguments)})`),
+          console.log(
+            `  ${style.cyan('→ MCP tool:')} ${style.bold(call.function.name)}(${JSON.stringify(call.function.arguments)})`,
+          ),
         onToolCallEnd: (result) => {
           // `outputString` is the model-visible rendering of the MCP result.
           const out = result.success ? result.outputString : `ERROR: ${result.error.message}`;
           const brief = out.split('\n').slice(0, 6).join('\n    ');
-          console.log(`  ← real MCP result:\n    ${brief}`);
+          const prefix = result.success
+            ? style.green('← real MCP result:')
+            : style.red('← real MCP error:');
+          console.log(`  ${prefix}\n    ${style.dim(brief)}`);
         },
       },
     });
@@ -181,8 +192,10 @@ async function main(): Promise<void> {
       ],
     });
 
-    console.log(`\n  final answer:\n  ${result.finalMessage.content.trim().split('\n').join('\n  ')}`);
-    console.log(`\n  iterations: ${result.totalIterations} · turns: ${result.turns.length}`);
+    printAnswer(result.finalMessage.content, {
+      iterations: result.totalIterations,
+      turns: result.turns.length,
+    });
   } finally {
     // ---- 4 · Clean teardown: MCP child process first, then the client ------
     await conn.close();

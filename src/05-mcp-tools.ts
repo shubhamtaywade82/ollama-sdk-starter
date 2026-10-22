@@ -27,7 +27,13 @@ import {
   type McpListToolsResult,
   type McpToolCallResult,
 } from '@nemesis-oss/ollama-sdk';
-import { chatJsonFrame, resolveRuntime, section } from './support/runtime.js';
+import {
+  chatJsonFrame,
+  printAnswer,
+  resolveRuntime,
+  section,
+  style,
+} from './support/runtime.js';
 import type { StarterRuntime } from './support/runtime.js';
 
 // ---- An in-memory "MCP server" ---------------------------------------------
@@ -189,22 +195,22 @@ async function main(): Promise<void> {
     maxIterations: 8,
     hooks: {
       onToolCallStart: (call) =>
-        console.log(`  → MCP tool: ${call.function.name}(${JSON.stringify(call.function.arguments)})`),
+        console.log(
+          `  ${style.cyan('→ MCP tool:')} ${style.bold(call.function.name)}(${JSON.stringify(call.function.arguments)})`,
+        ),
       onToolCallEnd: (result) => {
         // resultMode 'structured': raw MCP result, structuredContent intact.
         if (!result.success) {
-          console.log(`  ← MCP result: ERROR: ${result.error.message}`);
+          console.log(`  ${style.red('← MCP error:')} ${result.error.message}`);
           return;
         }
         const raw = result.result as McpCallToolResult;
         const text = raw.content.find((block) => block.type === 'text')?.text ?? '';
-        console.log(
-          `  ← MCP result: ${
-            raw.structuredContent !== undefined
-              ? JSON.stringify(raw.structuredContent)
-              : text
-          }`,
-        );
+        const body =
+          raw.structuredContent !== undefined
+            ? JSON.stringify(raw.structuredContent)
+            : text;
+        console.log(`  ${style.green('← MCP result:')} ${body}`);
       },
     },
   });
@@ -216,8 +222,9 @@ async function main(): Promise<void> {
     ],
   });
 
-  console.log(`\n  final answer: ${result.finalMessage.content.trim()}`);
-  console.log(`  iterations   : ${result.totalIterations}`);
+  printAnswer(result.finalMessage.content, {
+    iterations: result.totalIterations,
+  });
 
   await rt.shutdown();
 }

@@ -21,7 +21,13 @@ import {
   defineTool,
   ToolRegistry,
 } from '@nemesis-oss/ollama-sdk';
-import { chatJsonFrame, resolveRuntime, section } from './support/runtime.js';
+import {
+  chatJsonFrame,
+  printBox,
+  resolveRuntime,
+  section,
+  style,
+} from './support/runtime.js';
 import type { StarterRuntime } from './support/runtime.js';
 
 // ---- Tools: plain Zod in, plain objects out ------------------------------
@@ -115,12 +121,16 @@ async function main(): Promise<void> {
     maxToolCalls: 8, // total tool-call budget
     maxRepeatedToolCalls: 2, // cycle detection: same call+args twice max
     hooks: {
-      onTurnStart: (i) => console.log(`\n· turn ${i}`),
+      onTurnStart: (i) => console.log(`\n${style.bold(`· turn ${i}`)}`),
       onToolCallStart: (call) =>
-        console.log(`  → tool: ${call.function.name}(${JSON.stringify(call.function.arguments)})`),
+        console.log(
+          `  ${style.cyan('→ tool:')} ${style.bold(call.function.name)}(${JSON.stringify(call.function.arguments)})`,
+        ),
       onToolCallEnd: (result) =>
         console.log(
-          `  ← result: ${result.success ? JSON.stringify(result.result) : `ERROR: ${result.error.message}`}`,
+          result.success
+            ? `  ${style.green('← result:')} ${JSON.stringify(result.result)}`
+            : `  ${style.red('← error:')} ${result.error.message}`,
         ),
     },
   });
@@ -136,17 +146,19 @@ async function main(): Promise<void> {
     ],
   });
 
-  console.log('\n');
-  section('Agent result');
-  console.log(`final answer    : ${result.finalMessage.content.trim()}`);
-  console.log(`iterations used : ${result.totalIterations} (budget was 5)`);
-  console.log(`turns recorded  : ${result.turns.length}`);
-  for (const turn of result.turns) {
-    const tools = turn.toolCalls?.map((c) => c.function.name).join(', ');
-    console.log(
-      `  turn ${turn.iteration}: ${tools ? `called [${tools}]` : 'final message'}`,
-    );
-  }
+  const turnHistory = result.turns.map((turn) => {
+    const tools = turn.toolCalls?.map((c) => style.cyan(c.function.name)).join(', ');
+    return `  turn ${turn.iteration}: ${tools ? `called [${tools}]` : style.green('final answer')}`;
+  });
+
+  printBox('Agent Result', [
+    `${style.bold('Answer')}     : ${result.finalMessage.content.trim()}`,
+    `${style.bold('Iterations')} : ${result.totalIterations} (budget: 5)`,
+    `${style.bold('Turns')}      : ${result.turns.length}`,
+    style.dim('─'.repeat(58)),
+    style.bold('Execution History:'),
+    ...turnHistory,
+  ]);
 
   await rt.shutdown();
 }

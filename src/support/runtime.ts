@@ -112,3 +112,36 @@ export function section(title: string): void {
   console.log(`  ${title}`);
   console.log(`──────────────────────────────────────────────────────────────`);
 }
+
+/** Lightweight ANSI terminal styles with zero external dependencies. */
+export const style = {
+  bold: (s: string) => `\x1b[1m${s}\x1b[0m`,
+  dim: (s: string) => `\x1b[2m${s}\x1b[0m`,
+  cyan: (s: string) => `\x1b[36m${s}\x1b[0m`,
+  green: (s: string) => `\x1b[32m${s}\x1b[0m`,
+  yellow: (s: string) => `\x1b[33m${s}\x1b[0m`,
+  red: (s: string) => `\x1b[31m${s}\x1b[0m`,
+  magenta: (s: string) => `\x1b[35m${s}\x1b[0m`,
+};
+
+/** Render structured output cards with clear visual boundaries. */
+export function printBox(title: string, lines: string[]): void {
+  const width = 64;
+  const header = `┌─ ${style.bold(title)} ${'─'.repeat(Math.max(0, width - title.length - 4))}`;
+  console.log(`\n${header}`);
+  for (const line of lines) {
+    console.log(`│ ${line}`);
+  }
+  console.log(`└${'─'.repeat(width)}`);
+}
+
+/** Pretty-print an agent or completion final response with metadata. */
+export function printAnswer(answer: string, meta?: { iterations?: number; turns?: number }): void {
+  const metaText = meta?.iterations
+    ? ` ${style.dim(`(${meta.iterations} iterations, ${meta.turns ?? meta.iterations} turns)`)}`
+    : '';
+  console.log(`\n${style.green('✓ Final Answer')}${metaText}:`);
+  for (const line of answer.trim().split('\n')) {
+    console.log(`  ${line}`);
+  }
+}
