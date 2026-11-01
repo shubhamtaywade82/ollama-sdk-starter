@@ -19,7 +19,7 @@
   "dependencies": {
     "@modelcontextprotocol/client": "^2.3.1",
     "@modelcontextprotocol/server-filesystem": "^2.0.0",
-    "@nemesis-oss/ollama-sdk": "^1.19.1",
+    "@nemesis-oss/ollama-sdk": "^1.24.2",
     "zod": "^3.25.0"
   },
   "devDependencies": {
